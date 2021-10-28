@@ -10,8 +10,8 @@ set -eu
 # login: ec2-user@<ipv4>
 # base: 9 Gb
 
-PIPE_VERSION="$PALMIDVERSION"
-CONTAINER_VERSION="rzv:$PALMIDVERSION"
+PIPE_VERSION="$RZVVERSION"
+CONTAINER_VERSION="rzv:$RZVVERSION"
 AMI_VERSION='ami-0fdf24f2ce3c33243'
 
 
@@ -57,7 +57,7 @@ OUTNAME=""
 OUTDIR=""
 
 # Hardcoded inputs
-DB='/home/palmid/palmdb/palmdb'
+DB='/home/serratus/data/drz0'
 HOME='/home/serratus'
 
 # Parse inputs
@@ -112,7 +112,8 @@ mkdir -p $OUTDIR
 cp $INPUT $OUTDIR/$OUTNAME.input.fa
 
 # RVID ====================================================
-INPUT='murray.fa'
+# man: https://www.tbi.univie.ac.at/RNA/index.html
+INPUT='data/murray.fa'
 relplot='perl /home/ViennaRNA-2.4.18/src/Utils/relplot.pl'
 
 # Calculate MFE structure

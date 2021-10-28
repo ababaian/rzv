@@ -40,7 +40,7 @@ ARG TYPE='base'
 ARG VERSION='0.0.0'
 
 # Software Versions (pass to shell)
-ENV RVIDVERSION=$VERSION
+ENV RZVVERSION=$VERSION
 ENV SEQKITVERSION='2.0.0'
 ENV DIAMONDVERSION='2.0.6-dev'
 ENV MUSCLEVERSION='3.8.31'
@@ -75,7 +75,7 @@ RUN yum -y install \
     export 
 
 # Development Tools
-RUN yum -y install vim htop less
+RUN yum -y install vim htop less ImageMagick
 
 #==========================================================
 # Install Software ========================================
@@ -110,7 +110,7 @@ RUN wget https://www.tbi.univie.ac.at/RNA/download/sourcecode/2_4_x/ViennaRNA-${
   cd ViennaRNA* &&\
   bash configure --without-perl --without-python --without-python3 &&\
   make && make install &&\
-  cd .. && rm ViennaRNA*
+  cd .. && rm -rf ViennaRNA*
 
 #==========================================================
 # rzv Initialize ==========================================
