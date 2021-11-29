@@ -14,6 +14,10 @@ PIPE_VERSION="$RZVVERSION"
 CONTAINER_VERSION="rzv:$RZVVERSION"
 AMI_VERSION='ami-0fdf24f2ce3c33243'
 
+# sudo docker run  -v `pwd`:`pwd` -w `pwd` \
+# --entrypoint "/bin/bash" serratusbio/rzh:dev \
+# /home/serratus/rzv.sh -i data/murray.fa -o murray
+ 
 
 function usage {
   echo ""
@@ -57,7 +61,8 @@ OUTNAME=""
 OUTDIR=""
 
 # Hardcoded inputs
-DB='/home/serratus/data/drz0'
+DB='/home/serratus/data/DVR4.cm'
+HMM='/home/serratus/data/dAg.hmm'
 HOME='/home/serratus'
 
 # Parse inputs
@@ -106,31 +111,80 @@ if [ -z "$OUTDIR" ]; then
   OUTDIR=$PWD/$OUTNAME
 fi
 
+# # DEV TESTING
+# INPUT='/home/serratus/data/murray.fa'
+# OUTDIR='/home/serratus/murray/'
+# OUTNAME='murray'
+
 # Output options
 #echo "Creating dir $OUTNAME"
 mkdir -p $OUTDIR
 cp $INPUT $OUTDIR/$OUTNAME.input.fa
+cd $OUTDIR
 
-# RVID ====================================================
+# RZV =====================================================
+
+# RNAfold ---------------------------------------
 # man: https://www.tbi.univie.ac.at/RNA/index.html
-INPUT='data/murray.fa'
-relplot='perl /home/ViennaRNA-2.4.18/src/Utils/relplot.pl'
+relplot='perl /usr/local/share/ViennaRNA/bin/relplot.pl'
 
 # Calculate MFE structure
-RNAfold -i $INPUT --outfile="$INPUT.fold" \
-  --id-prefix="$INPUT" \
+RNAfold -i $OUTNAME.input.fa \
+  --outfile="$OUTNAME.fold" \
+  --id-prefix="$OUTNAME" \
   -p --circ --layout-type=2
 
-$relplot "$INPUT"_0001_ss.ps "$INPUT"_0001_dp.ps \
-  > $INPUT.ps
+$relplot -p "$OUTNAME"_0001_ss.ps "$OUTNAME"_0001_dp.ps \
+  > $OUTNAME.ps
 
 # Re-position legend
-sed -i 's/0.1 0.1 colorbar/0.01 0.01 colorbar/g' $INPUT.ps
+sed -i 's/0.1 0.1 colorbar/0.01 0.01 colorbar/g' $OUTNAME.ps
 # Remove outline
-sed -i 's/^drawoutline$/%drawoutline/g' $INPUT.ps
-# remove arc-dashes
-sed -i 's/\[9 3.01\] 9 setdash//g' $INPUT.ps
+sed -i 's/^drawoutline$/%drawoutline/g' $OUTNAME.ps
+# remove arc-dashes, thicken lines
+sed -i 's/\[9 3.01\] 9 setdash//g' $OUTNAME.ps
+sed -i 's/0.7 setlinewidth/2 setlinewidth/g' $OUTNAME.ps
+
 # TODO: Apply the entropy coloring which is used for
 # the base-circles ('drawreliability') to the base-pairing
 # arcs in `/drawpair`. Either modify relplot.pl or script
 # the change in the post-script file directly
+
+# Convert to PNG
+convert -density 150 -alpha off $OUTNAME.ps $OUTNAME.png
+
+# INFERNAL --------------------------------------
+
+# Use -Z 1000 (1 Gbp search space for standardized reporting)
+cmsearch -o $OUTNAME.inf --notextw \
+  -A $OUTNAME.inf.align.tmp \
+  --tblout $OUTNAME.tb.inf \
+  -Z 1000 \
+  $DB $OUTNAME.input.fa
+
+# Translate -------------------------------------
+seqkit translate -F -f 6 -w 50 $OUTNAME.input.fa \
+  > $OUTNAME.xlate.fa
+
+# HMMR ------------------------------------------
+
+hmmsearch -o $OUTNAME.hmmsearch --notextw \
+  -A $OUTNAME.align.tmp \
+  --tblout $OUTNAME.tb.hmmsearch \
+  $HMM $OUTNAME.xlate.fa
+
+# Convert alignment hit to fasta file
+if [ -s $OUTNAME.align.tmp ]
+then
+  grep -v "^[$//#]" $OUTNAME.align.tmp \
+    | grep -v "^$" - \
+    | sed 's/^/>/g' - \
+    | sed 's/ /\n/g' - \
+    | grep -v "^$" - \
+    > $OUTNAME.dAg.fa
+
+  rm $OUTNAME.align.tmp
+else
+  echo No dAg alignment found
+  rm $OUTNAME.align.tmp
+fi

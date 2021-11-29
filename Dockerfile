@@ -9,15 +9,17 @@ FROM amazonlinux:2 AS serratus-base
 # sudo service docker start
 # git clone https://github.com/ababaian/rzv.git; cd rzv
 #
-# sudo docker build -t rzv:local
+# sudo docker build -t rzv:local ./
 #
 
 ## Push to dockerhub
 # sudo docker login
 # 
+# sudo docker build -t rzv:dev ./
+#
 # sudo docker build --no-cache \
 #  -t serratusbio/rzv \
-#  -t serratusbio/rzv:0.0.3 \
+#  -t serratusbio/rzv:0.0.0 \
 #  -t serratusbio/rzv:latest \
 #  -t rzv:latest .
 #
@@ -87,6 +89,13 @@ RUN wget http://eddylab.org/infernal/infernal-${INFERNALVERSION}-linux-intel-gcc
   cd infernal* &&\
   bash configure && make && sudo make install &&\
   cd .. && rm -rf infernal*
+
+# HMMR ==========================================
+RUN wget http://eddylab.org/software/hmmer/hmmer.tar.gz &&\
+  tar zxf hmmer.tar.gz &&\
+  cd hmmer-* &&\
+  ./configure && make && make install &&\
+  cd .. && rm -rf hmmer*
 
 # SeqKit ========================================
 RUN wget https://github.com/shenwei356/seqkit/releases/download/v${SEQKITVERSION}/seqkit_linux_amd64.tar.gz &&\
